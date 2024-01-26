@@ -36,3 +36,29 @@ variable "lake-buckets" {
     "painel-oncologia-curated",
   ]
 }
+
+variable "lake-datasets" {
+  type = list(object(
+    {
+      id            = string
+      friendly_name = string
+      description   = string
+    }
+  ))
+
+  default = [{
+    id            = "sus"
+    friendly_name = "SUS"
+    description   = "Informações comuns entre os sistemas do SUS"
+    },
+    {
+      id            = "informacoes_ambulatoriais"
+      friendly_name = "Informacoes ambulatoriais"
+      description   = "SIA/SUS - Sistemas de Informações Ambulatoriais do SUS"
+    },
+    {
+      id            = "informacoes_hospitalares"
+      friendly_name = "Informacoes hospitalares"
+      description   = "SIH/SUS - Sistemas de Informações Hospitalares do SUS"
+  }]
+}

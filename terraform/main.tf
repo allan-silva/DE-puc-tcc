@@ -11,3 +11,13 @@ module "buckets" {
 
   bucket_name = each.key
 }
+
+module "big-query" {
+  for_each = {for i, value in var.lake-datasets: i => value}
+
+  source = "./big-query"
+
+  dataset_id            = each.value.id
+  dataset_friendly_name = each.value.friendly_name
+  dataset_description   = each.value.description
+}
