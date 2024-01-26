@@ -22,3 +22,17 @@ variable "required_api_services" {
     "dataproc.googleapis.com"
   ]
 }
+
+variable "lake-buckets" {
+  type = list(string)
+  default = [
+    "sus-raw",
+    "sus-curated",
+    "informacoes-ambulatoriais-raw",
+    "informacoes-ambulatoriais-curated",
+    "informacoes-hospitalares-raw",
+    "informacoes-hospitalares-curated",
+    "painel-oncologia-raw",
+    "painel-oncologia-curated",
+  ]
+}

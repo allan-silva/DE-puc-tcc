@@ -4,3 +4,10 @@ module "apis" {
 
   service_name = each.key
 }
+
+module "buckets" {
+  for_each = toset(var.lake-buckets)
+  source   = "./buckets"
+
+  bucket_name = each.key
+}
