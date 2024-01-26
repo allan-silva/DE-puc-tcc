@@ -13,3 +13,12 @@ variable "region" {
 variable "zone" {
   default = "us-central1-c"
 }
+
+variable "required_api_services" {
+  type = list(string)
+  default = [
+    "dataplex.googleapis.com",
+    "datacatalog.googleapis.com",
+    "dataproc.googleapis.com"
+  ]
+}
