@@ -1,7 +1,5 @@
 variable "bucket_name" {
-    description = "Lake bucket name"
+  description = "Lake bucket name"
 }
 
-variable "location" {
-  default = "US"
-}
+variable "bucket_region" {}
