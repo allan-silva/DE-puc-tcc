@@ -27,8 +27,8 @@ variable "lake-zones" {
 
 variable "assets" {
   type = map(list(object({
-    name = string,
+    name          = string,
     resource_name = string,
-    type = string
+    type          = string
   })))
 }

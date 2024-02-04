@@ -7,6 +7,7 @@ module "apis" {
 }
 
 # Create cloud storage buckets
+
 module "informacoes-ambulatoriais-raw" {
   source = "./buckets"
 
@@ -49,7 +50,48 @@ module "sus-curated" {
   bucket_region = var.region
 }
 
+module "datasus-spark-jobs" {
+  source = "./buckets"
+
+  bucket_name   = "datasus-spark-jobs"
+  bucket_region = var.region
+}
+
 # Create BigQuery datasets
+
+module "ingestion_info-dataset" {
+  source = "./big-query"
+
+  dataset_id            = "ingestion_info"
+  dataset_friendly_name = "Files processing ingestion information."
+  dataset_description   = "Files processing ingestion information."
+}
+
+resource "google_bigquery_table" "discovered_files_table" {
+  dataset_id          = module.ingestion_info-dataset.lake-dataset-dataset_id
+  deletion_protection = false
+  table_id            = "discovered_files"
+  schema              = <<EOF
+[
+  {
+    "name": "file_uri",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "source",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "discovery_date",
+    "type": "DATE",
+    "mode": "REQUIRED"
+  }
+]
+  EOF
+}
+
 module "sus-dataset" {
   source = "./big-query"
 
@@ -139,9 +181,9 @@ module "sus-lake" {
     }]
 
     "informacoes-ambulatoriais-curated" = [{
-        name          = "informacoes-ambulatoriais-curated"
-        resource_name = "projects/${var.project}/buckets/${module.informacoes-ambulatoriais-curated.lake-bucket-id}"
-        type          = "STORAGE_BUCKET"
+      name          = "informacoes-ambulatoriais-curated"
+      resource_name = "projects/${var.project}/buckets/${module.informacoes-ambulatoriais-curated.lake-bucket-id}"
+      type          = "STORAGE_BUCKET"
       },
       {
         name          = "informacoes-ambulatoriais-dataset"
@@ -150,9 +192,9 @@ module "sus-lake" {
     }]
 
     "informacoes-hospitalares-curated" = [{
-        name          = "informacoes-hospitalares-curated"
-        resource_name = "projects/${var.project}/buckets/${module.informacoes-hospitalares-curated.lake-bucket-id}"
-        type          = "STORAGE_BUCKET"
+      name          = "informacoes-hospitalares-curated"
+      resource_name = "projects/${var.project}/buckets/${module.informacoes-hospitalares-curated.lake-bucket-id}"
+      type          = "STORAGE_BUCKET"
       },
       {
         name          = "informacoes-hospitalares-dataset"
@@ -161,9 +203,9 @@ module "sus-lake" {
     }]
 
     "sus-curated" = [{
-        name          = "sus-curated"
-        resource_name = "projects/${var.project}/buckets/${module.sus-curated.lake-bucket-id}"
-        type          = "STORAGE_BUCKET"
+      name          = "sus-curated"
+      resource_name = "projects/${var.project}/buckets/${module.sus-curated.lake-bucket-id}"
+      type          = "STORAGE_BUCKET"
       },
       {
         name          = "sus-dataset"
@@ -181,4 +223,35 @@ module "sus-lake" {
     module.informacoes_hospitalares-dataset,
     module.sus-dataset
   ]
+}
+
+# Dataproc workflow templates
+module "dataproc-workflow-SIA" {
+  source         = "./dataproc-workflow"
+  name           = "informacoes-ambulatoriais"
+  raw_bucket     = module.informacoes-ambulatoriais-raw.lake-bucket-url
+  source_system  = "SIA"
+  job_bucket = module.datasus-spark-jobs.lake-bucket-url
+  location       = var.region
+  depends_on     = [module.informacoes-ambulatoriais-raw, module.datasus-spark-jobs]
+}
+
+module "dataproc-workflow-SIH" {
+  source         = "./dataproc-workflow"
+  name           = "informacoes-hospitalares"
+  raw_bucket     = module.informacoes-hospitalares-raw.lake-bucket-url
+  source_system  = "SIH"
+  job_bucket = module.datasus-spark-jobs.lake-bucket-url
+  location       = var.region
+  depends_on     = [module.informacoes-hospitalares-raw, module.datasus-spark-jobs]
+}
+
+module "dataproc-workflow-SUS" {
+  source         = "./dataproc-workflow"
+  name           = "sus"
+  raw_bucket     = module.sus-raw.lake-bucket-url
+  source_system  = "SUS"
+  job_bucket = module.datasus-spark-jobs.lake-bucket-url
+  location       = var.region
+  depends_on     = [module.sus-raw, module.datasus-spark-jobs]
 }

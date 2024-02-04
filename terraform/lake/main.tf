@@ -25,22 +25,22 @@ resource "google_dataplex_zone" "lake-zone" {
 }
 
 locals {
-    assets_list = flatten([for zone, assets in var.assets: [
-        for asset in assets: {
-            dataplex_zone = zone
-            name = asset.name
-            resource_name = asset.resource_name
-            type = asset.type
-        }
-    ]])
+  assets_list = flatten([for zone, assets in var.assets : [
+    for asset in assets : {
+      dataplex_zone = zone
+      name          = asset.name
+      resource_name = asset.resource_name
+      type          = asset.type
+    }
+  ]])
 }
 
 resource "google_dataplex_asset" "lake-asset" {
-  for_each = {for i, value in local.assets_list: i => value }
+  for_each = { for i, value in local.assets_list : i => value }
 
-  lake = google_dataplex_lake.lake.id
-  name = each.value.name
-  location = google_dataplex_lake.lake.location
+  lake          = google_dataplex_lake.lake.id
+  name          = each.value.name
+  location      = google_dataplex_lake.lake.location
   dataplex_zone = each.value.dataplex_zone
   discovery_spec {
     enabled = true
@@ -51,5 +51,5 @@ resource "google_dataplex_asset" "lake-asset" {
     type = each.value.type
   }
 
-  depends_on = [ google_dataplex_zone.lake-zone ]
+  depends_on = [google_dataplex_zone.lake-zone]
 }
