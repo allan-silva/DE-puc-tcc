@@ -6,6 +6,10 @@ variable "raw_bucket" {
 
 }
 
+variable "curated_bucket" {
+
+}
+
 variable "job_bucket" {
 
 }

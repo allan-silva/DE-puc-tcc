@@ -32,7 +32,7 @@ resource "google_dataproc_workflow_template" "datasus-workflow-template" {
         }
 
         software_config {
-          image_version = "2.2-debian11"
+          image_version = "2.2-debian12"
         }
       }
     }
@@ -44,8 +44,18 @@ resource "google_dataproc_workflow_template" "datasus-workflow-template" {
       args          = [var.raw_bucket, var.source_system]
       main_class    = "br.dev.contrib.gov.sus.opendata.jobs.DatasusFileDiscoveryMetadataJob"
       jar_file_uris = ["${var.job_bucket}/datasussparkjobs_2.12-0.1.0-SNAPSHOT.jar"]
+    }
+  }
+
+  jobs {
+    step_id = "file-conversion"
+    prerequisite_step_ids = ["file-discovery"]
+    spark_job {
+      args = [var.source_system, var.curated_bucket]
+      main_class    = "br.dev.contrib.gov.sus.opendata.jobs.FileConversionJob"
+      jar_file_uris = ["${var.job_bucket}/datasussparkjobs_2.12-0.1.0-SNAPSHOT.jar"]
       properties = {
-        "spark.jars.packages" : "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.36.1,com.google.cloud:google-cloud-bigquery:2.37.0"
+        "spark.jars.packages" : "br.dev.contrib.gov.sus.opendata:libdatasus-parquet-dbf:1.0.7"
       }
     }
   }

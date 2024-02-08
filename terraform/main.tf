@@ -92,6 +92,43 @@ resource "google_bigquery_table" "discovered_files_table" {
   EOF
 }
 
+resource "google_bigquery_table" "curated_files_table" {
+  dataset_id          = module.ingestion_info-dataset.lake-dataset-dataset_id
+  deletion_protection = false
+  table_id            = "curated_files"
+  schema              = <<EOF
+[
+  {
+    "name": "source_file_uri",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "parquet_file_uri",
+    "type": "STRING"
+  },
+  {
+    "name": "source",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "converted_date",
+    "type": "DATE"
+  },
+  {
+    "name": "success",
+    "type": "BOOL",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "error_message",
+    "type": "STRING"
+  }
+]
+  EOF
+}
+
 module "sus-dataset" {
   source = "./big-query"
 
@@ -230,6 +267,7 @@ module "dataproc-workflow-SIA" {
   source         = "./dataproc-workflow"
   name           = "informacoes-ambulatoriais"
   raw_bucket     = module.informacoes-ambulatoriais-raw.lake-bucket-url
+  curated_bucket = module.informacoes-ambulatoriais-curated.lake-bucket-url
   source_system  = "SIA"
   job_bucket = module.datasus-spark-jobs.lake-bucket-url
   location       = var.region
@@ -240,6 +278,7 @@ module "dataproc-workflow-SIH" {
   source         = "./dataproc-workflow"
   name           = "informacoes-hospitalares"
   raw_bucket     = module.informacoes-hospitalares-raw.lake-bucket-url
+  curated_bucket = module.informacoes-hospitalares-curated.lake-bucket-url
   source_system  = "SIH"
   job_bucket = module.datasus-spark-jobs.lake-bucket-url
   location       = var.region
@@ -250,6 +289,7 @@ module "dataproc-workflow-SUS" {
   source         = "./dataproc-workflow"
   name           = "sus"
   raw_bucket     = module.sus-raw.lake-bucket-url
+  curated_bucket = module.sus-curated.lake-bucket-url
   source_system  = "SUS"
   job_bucket = module.datasus-spark-jobs.lake-bucket-url
   location       = var.region
