@@ -1,5 +1,6 @@
 package br.dev.contrib.gov.sus.opendata.jobs
 
+import br.dev.contrib.gov.sus.opendata.jobs.Datasets.{INGESTION_INFO_DATASET, DISCOVERY_TABLE}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.types.StructType
@@ -8,8 +9,6 @@ import java.time.LocalDate
 import collection.JavaConverters._
 
 object DatasusFileDiscoveryMetadataJob {
-  private val DISCOVERY_DATASET = "ingestion_info"
-  private val DISCOVERY_TABLE = "discovered_files"
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession
@@ -60,7 +59,7 @@ object DatasusFileDiscoveryMetadataJob {
           .format("bigquery")
           .mode(SaveMode.Append)
           .option("writeMethod", "direct")
-          .option("dataset", DISCOVERY_DATASET)
+          .option("dataset", INGESTION_INFO_DATASET)
           .option("table", DISCOVERY_TABLE)
           .save()
   }
@@ -87,7 +86,7 @@ object DatasusFileDiscoveryMetadataJob {
     def discoveredFilesDF(): DataFrame = {
       spark.read
         .format("bigquery")
-        .option("dataset", DISCOVERY_DATASET)
+        .option("dataset", INGESTION_INFO_DATASET)
         .option("table", DISCOVERY_TABLE)
         .load()
     }
@@ -96,5 +95,10 @@ object DatasusFileDiscoveryMetadataJob {
 
 // ./sbin/start-master.sh
 // ./sbin/start-worker.sh spark://allan-ThinkPad-E14-Gen-2:7077
-// spark-submit --class br.dev.contrib.gov.sus.opendata.jobs.DatasusFileDiscoveryMetadataJob --master spark://allan-ThinkPad-E14-Gen-2:7077 --packages "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.36.1,com.google.cloud:google-cloud-bigquery:2.37.0" --conf "spark.executor.userClassPathFirst=true" --conf "spark.driver.userClassPathFirst=true" --conf "credentialsFile=/home/allan/secdrop/puc-tcc-412315-9e63f609ce1f.json" /home/allan/code.allan/DE-puc-tcc/spark/target/scala-2.12/datasussparkjobs_2.12-0.1.0-SNAPSHOT.jar /home/allan/teste/inputDirectory SIA
-// spark-submit --class br.dev.contrib.gov.sus.opendata.jobs.DatasusFileDiscoveryMetadataJob --master spark://allan-ThinkPad-E14-Gen-2:7077 --packages "com.google.cloud.spark:spark-bigquery-with-dependencies_2.13:0.36.1,com.google.cloud:google-cloud-bigquery:2.37.0" --conf "spark.executor.userClassPathFirst=true" --conf "spark.driver.userClassPathFirst=true" --conf "credentialsFile=/home/allan/secdrop/puc-tcc-412315-9e63f609ce1f.json" /home/allan/code.allan/DE-puc-tcc/spark/target/scala-2.13/datasussparkjobs_2.13-0.1.0-SNAPSHOT.jar /home/allan/teste/inputDirectory SIA
+//spark-submit --class br.dev.contrib.gov.sus.opendata.jobs.DatasusFileDiscoveryMetadataJob \
+//  --master spark://allan-ThinkPad-E14-Gen-2:7077 \
+//  --packages "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.34.0,br.dev.contrib.gov.sus.opendata:libdatasus-parquet-dbf:1.0.5" \
+//    --conf "spark.executor.userClassPathFirst=true" \
+//    --conf "spark.driver.userClassPathFirst=true" \
+//    --conf "credentialsFile=/home/allan/secdrop/puc-tcc-412315-9e63f609ce1f.json" \
+//    /home/allan/code.allan/DE-puc-tcc/spark/target/scala-2.12/datasussparkjobs_2.12-0.1.0-SNAPSHOT.jar /home/allan/teste/inputDirectory SIA
