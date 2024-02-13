@@ -1,6 +1,10 @@
 package br.dev.contrib.gov.sus.opendata.jobs
 
-import br.dev.contrib.gov.sus.opendata.jobs.Datasets.{CURATED_FILES_SCHEMA, CURATED_FILES_TABLE, INGESTION_INFO_DATASET}
+import br.dev.contrib.gov.sus.opendata.jobs.Datasets.{
+  CURATED_FILES_SCHEMA,
+  CURATED_FILES_TABLE,
+  INGESTION_INFO_DATASET
+}
 import br.gov.sus.opendata.dbf.parquet.DbfParquet
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.hadoop.fs.Path
@@ -9,27 +13,51 @@ import org.apache.spark.sql._
 import org.apache.spark.util.SerializableConfiguration
 
 import java.net.URI
-import java.nio.file.{Files, Paths}
+import java.nio.file.Files
 import java.sql.Date
 
 object FileConversionJob {
   private val log: Logger = Logger.getLogger(getClass.getName)
 
   def main(args: Array[String]): Unit = {
+    if (args.length < 2) {
+      throw new IllegalArgumentException("No enough arguments")
+    }
+
     val spark = SparkSession
       .builder()
       .appName("DBF/DBC file conversion")
       .getOrCreate
       .configureForJob()
 
-    if (args.length < 2) {
-      throw new IllegalArgumentException("No enough arguments")
-    }
+    spark.sparkContext.getConf.getAll
 
     val sourceSystem = args(0)
     val outputBucket = args(1)
+    val workerInstances = args(2).toInt
 
-    val notCuratedFiles = spark.notCuratedFilesDF(sourceSystem)
+    val notCuratedFiles = spark.notCuratedFilesDF(sourceSystem, workerInstances)
+    processFiles(
+      spark,
+      notCuratedFiles,
+      sourceSystem,
+      outputBucket,
+      workerInstances
+    )
+  }
+
+  private def processFiles(
+      spark: SparkSession,
+      notCuratedFiles: DataFrame,
+      sourceSystem: String,
+      outputBucket: String,
+      workerInstances: Int
+  ): Unit = {
+
+    if (notCuratedFiles.count() == 0) {
+      return
+    }
+
     notCuratedFiles.show(false)
     log.info("> ^^^ Files to be processed")
 
@@ -49,6 +77,16 @@ object FileConversionJob {
       .option("dataset", INGESTION_INFO_DATASET)
       .option("table", CURATED_FILES_TABLE)
       .save()
+
+    log.info("Successful write to BigQuery")
+
+    processFiles(
+      spark,
+      spark.notCuratedFilesDF(sourceSystem, workerInstances),
+      sourceSystem,
+      outputBucket,
+      workerInstances
+    )
   }
 
   private def convertFiles(
@@ -106,26 +144,33 @@ object FileConversionJob {
 
     FileOps.copy(remoteFileURI, localFileUri, configuration.value)
 
-    log.info(
-      s"Converting file: ${localFileUri.toString} => ${convertedFileURI.toString}"
-    )
-    val converter =
-      DbfParquet.builder().withHadoopConf(configuration.value).build()
-    converter.convert(
-      localFilepath,
-      convertedFilePath
-    )
+    if (!FileOps.exists(convertedFileURI, configuration.value)) {
+      log.info(
+        s"Converting file: ${localFileUri.toString} => ${convertedFileURI.toString}"
+      )
+      val converter =
+        DbfParquet.builder().withHadoopConf(configuration.value).build()
+      converter.convert(
+        localFilepath,
+        convertedFilePath
+      )
+    } else {
+      log.info(s"${convertedFileURI.toString} already exists, no conversion was made.")
+    }
 
     log.info(
       s"Coping local file to remote: ${convertedFileURI.toString} to ${remoteConvertedFileUri.toString}"
     )
-    FileOps.copyOverwriting(convertedFileURI, remoteConvertedFileUri, configuration.value)
+    FileOps.copyOverwriting(
+      convertedFileURI,
+      remoteConvertedFileUri,
+      configuration.value
+    )
 
-    val sourceSystem = row.getAs[String]("source")
     Row(
       remoteFileURI.toString,
       remoteConvertedFileUri.toString,
-      sourceSystem,
+      row.getAs[String]("source"),
       new Date(System.currentTimeMillis()),
       true,
       null
@@ -139,31 +184,46 @@ object FileConversionJob {
 
     def configureForJob(): SparkSession = {
       spark.conf.set("viewsEnabled", true)
+      spark.conf.set("cacheExpirationTimeInMinutes", 0)
       spark.conf.set("materializationDataset", INGESTION_INFO_DATASET)
       spark
     }
 
-    def notCuratedFilesDF(sourceSystem: String): DataFrame = {
+    def notCuratedFilesDF(
+        sourceSystem: String,
+        workerInstances: Int
+    ): DataFrame = {
       // Current version of bigquery connector does not support sql parameters to prevent sql injection
       // Once `sourceSystem`is provided by dataproc workflow template, not a problem here.
 
       val sql =
         s"""
-          SELECT DISTINCT
-            d.file_uri,
-            d.source
-          FROM
-            `$INGESTION_INFO_DATASET.discovered_files` d
-          LEFT JOIN
-            `$INGESTION_INFO_DATASET.curated_files` c
-          ON
-            d.file_uri = c.source_file_uri
-            AND d.source = c.source
-          WHERE
-            d.source = '$sourceSystem'
-            AND
-            (c.source_file_uri IS NULL
-            OR c.success = FALSE)
+            WITH converted_files AS(
+              SELECT
+                source_file_uri
+              FROM
+                `$INGESTION_INFO_DATASET.curated_files`
+              WHERE
+                success IS TRUE
+            )
+            SELECT DISTINCT
+              d.file_uri,
+              d.source
+            FROM
+              `$INGESTION_INFO_DATASET.discovered_files` d
+            LEFT JOIN
+              `$INGESTION_INFO_DATASET.curated_files` c
+            ON
+              d.file_uri = c.source_file_uri
+              AND d.source = c.source
+            WHERE
+              d.source = '$sourceSystem'
+              AND
+              (c.source_file_uri IS NULL OR c.success IS FALSE)
+              AND
+              d.file_uri NOT IN(
+                SELECT * from converted_files
+              ) LIMIT $workerInstances
         """
 
       spark.read
@@ -172,17 +232,3 @@ object FileConversionJob {
     }
   }
 }
-
-// ./sbin/start-master.sh
-// ./sbin/start-worker.sh spark://allan-ThinkPad-E14-Gen-2:7077
-// spark-submit --class br.dev.contrib.gov.sus.opendata.jobs.FileConversionJob --master spark://allan-ThinkPad-E14-Gen-2:7077 --packages "com.google.cloud.spark:spark-bigquery_2.12:0.36.1,com.google.cloud:google-cloud-bigquery:2.37.0" --conf "spark.executor.userClassPathFirst=true" --conf "spark.driver.userClassPathFirst=true" --conf "credentialsFile=/home/allan/secdrop/puc-tcc-412315-9e63f609ce1f.json" /home/allan/code.allan/DE-puc-tcc/spark/target/scala-2.12/DataSusSparkJobs-assembly-0.1.0-SNAPSHOT.jar SIA /home/allan/teste/outputDirectory
-
-//spark-submit --class br.dev.contrib.gov.sus.opendata.jobs.FileConversionJob \
-//  --master spark://allan-ThinkPad-E14-Gen-2:7077 \
-//  --packages "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.34.0,br.dev.contrib.gov.sus.opendata:libdatasus-parquet-dbf:1.0.5" \
-//    --conf "spark.executor.userClassPathFirst=true" \
-//    --conf "spark.driver.userClassPathFirst=true" \
-//    --conf "credentialsFile=/home/allan/secdrop/puc-tcc-412315-9e63f609ce1f.json" \
-//    /home/allan/code.allan/DE-puc-tcc/spark/target/scala-2.12/datasussparkjobs_2.12-0.1.0-SNAPSHOT.jar SIA file:///home/allan/teste/outputDirectory
-
-// spark-submit --class br.dev.contrib.gov.sus.opendata.jobs.FileConversionJob --master spark://allan-ThinkPad-E14-Gen-2:7077 --packages "com.google.cloud.spark:spark-bigquery-with-dependencies_2.13:0.36.1,com.google.cloud:google-cloud-bigquery:2.37.0" --conf "spark.executor.userClassPathFirst=true" --conf "spark.driver.userClassPathFirst=true" --conf "credentialsFile=/home/allan/secdrop/puc-tcc-412315-9e63f609ce1f.json" /home/allan/code.allan/DE-puc-tcc/spark/target/scala-2.13/datasussparkjobs_2.13-0.1.0-SNAPSHOT.jar SIA /home/allan/teste/outputDirectory

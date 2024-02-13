@@ -1,7 +1,7 @@
 package br.dev.contrib.gov.sus.opendata.jobs
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileUtil, Path}
+import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 
 import java.net.URI
 
@@ -34,5 +34,10 @@ object FileOps {
       overwrite,
       conf
     )
+  }
+
+  def exists(src: URI, conf: Configuration): Boolean = {
+    val srcPath = new Path(src)
+    srcPath.getFileSystem(conf).exists(srcPath)
   }
 }

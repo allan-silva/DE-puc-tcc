@@ -92,13 +92,3 @@ object DatasusFileDiscoveryMetadataJob {
     }
   }
 }
-
-// ./sbin/start-master.sh
-// ./sbin/start-worker.sh spark://allan-ThinkPad-E14-Gen-2:7077
-//spark-submit --class br.dev.contrib.gov.sus.opendata.jobs.DatasusFileDiscoveryMetadataJob \
-//  --master spark://allan-ThinkPad-E14-Gen-2:7077 \
-//  --packages "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.34.0,br.dev.contrib.gov.sus.opendata:libdatasus-parquet-dbf:1.0.5" \
-//    --conf "spark.executor.userClassPathFirst=true" \
-//    --conf "spark.driver.userClassPathFirst=true" \
-//    --conf "credentialsFile=/home/allan/secdrop/puc-tcc-412315-9e63f609ce1f.json" \
-//    /home/allan/code.allan/DE-puc-tcc/spark/target/scala-2.12/datasussparkjobs_2.12-0.1.0-SNAPSHOT.jar /home/allan/teste/inputDirectory SIA
