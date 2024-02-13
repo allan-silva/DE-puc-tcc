@@ -21,3 +21,7 @@ variable "source_system" {
 variable "location" {
 
 }
+
+variable "worker_instances" {
+  default = 3
+}

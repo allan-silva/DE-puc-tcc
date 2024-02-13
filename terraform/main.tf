@@ -129,6 +129,51 @@ resource "google_bigquery_table" "curated_files_table" {
   EOF
 }
 
+resource "google_bigquery_table" "warehouse_datasets_table" {
+  dataset_id          = module.ingestion_info-dataset.lake-dataset-dataset_id
+  deletion_protection = false
+  table_id            = "warehouse_datasets"
+  schema              = <<EOF
+[
+  {
+    "name": "parquet_file_uri",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "source",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "success",
+    "type": "BOOL",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "dataset",
+    "type": "STRING"
+  },
+  {
+    "name": "table",
+    "type": "STRING"
+  },
+  {
+    "name": "entries_count",
+    "type": "INT64"
+  },
+  {
+    "name": "load_date",
+    "type": "DATE"
+  },
+  {
+    "name": "error_message",
+    "type": "STRING"
+  }
+]
+  EOF
+}
+
 module "sus-dataset" {
   source = "./big-query"
 
@@ -154,113 +199,113 @@ module "informacoes_hospitalares-dataset" {
 }
 
 # Create data lake
-module "sus-lake" {
-  source            = "./lake"
-  lake_location     = var.region
-  lake_name         = "sus-lake"
-  lake_description  = "Sistema Único de Saúde - Data Lake"
-  lake_display_name = "Sistema Único de Saúde - Data Lake"
-  lake-zones = [
-    {
-      name         = "informacoes-ambulatoriais-raw"
-      description  = "Raw Data - SIA/SUS - Sistemas de Informações Ambulatoriais do SUS"
-      type         = "RAW"
-      display_name = "SIA/SUS - Sistemas de Informações Ambulatoriais do SUS"
-    },
-    {
-      name         = "informacoes-hospitalares-raw"
-      description  = "Raw Data - SIH/SUS - Sistemas de Informações Hospitalares do SUS"
-      type         = "RAW"
-      display_name = "Raw Data - SIH/SUS - Sistemas de Informações Hospitalares do SUS"
-    },
-    {
-      name         = "sus-raw"
-      description  = "Raw Data - Informações comuns entre os sistemas do SUS"
-      type         = "RAW"
-      display_name = "Raw Data - Informações comuns entre os sistemas do SUS"
-    },
-    {
-      name         = "informacoes-ambulatoriais-curated"
-      description  = "Curated Data - SIA/SUS - Sistemas de Informações Ambulatoriais do SUS"
-      type         = "CURATED"
-      display_name = "Curated Data - SIA/SUS - Sistemas de Informações Ambulatoriais do SUS"
-    },
-    {
-      name         = "informacoes-hospitalares-curated"
-      description  = "Curated Data - SIH/SUS - Sistemas de Informações Hospitalares do SUS"
-      type         = "CURATED"
-      display_name = "Curated Data - SIH/SUS - Sistemas de Informações Hospitalares do SUS"
-    },
-    {
-      name         = "sus-curated"
-      description  = "Curated Data - Informações comuns entre os sistemas do SUS"
-      type         = "CURATED"
-      display_name = "Curated Data - Informações comuns entre os sistemas do SUS"
-    }
-  ]
-  assets = {
-    "informacoes-ambulatoriais-raw" = [{
-      name          = "informacoes-ambulatoriais-raw"
-      resource_name = "projects/${var.project}/buckets/${module.informacoes-ambulatoriais-raw.lake-bucket-id}"
-      type          = "STORAGE_BUCKET"
-    }]
+# module "sus-lake" {
+#   source            = "./lake"
+#   lake_location     = var.region
+#   lake_name         = "sus-lake"
+#   lake_description  = "Sistema Único de Saúde - Data Lake"
+#   lake_display_name = "Sistema Único de Saúde - Data Lake"
+#   lake-zones = [
+#     {
+#       name         = "informacoes-ambulatoriais-raw"
+#       description  = "Raw Data - SIA/SUS - Sistemas de Informações Ambulatoriais do SUS"
+#       type         = "RAW"
+#       display_name = "SIA/SUS - Sistemas de Informações Ambulatoriais do SUS"
+#     },
+#     {
+#       name         = "informacoes-hospitalares-raw"
+#       description  = "Raw Data - SIH/SUS - Sistemas de Informações Hospitalares do SUS"
+#       type         = "RAW"
+#       display_name = "Raw Data - SIH/SUS - Sistemas de Informações Hospitalares do SUS"
+#     },
+#     {
+#       name         = "sus-raw"
+#       description  = "Raw Data - Informações comuns entre os sistemas do SUS"
+#       type         = "RAW"
+#       display_name = "Raw Data - Informações comuns entre os sistemas do SUS"
+#     },
+#     {
+#       name         = "informacoes-ambulatoriais-curated"
+#       description  = "Curated Data - SIA/SUS - Sistemas de Informações Ambulatoriais do SUS"
+#       type         = "CURATED"
+#       display_name = "Curated Data - SIA/SUS - Sistemas de Informações Ambulatoriais do SUS"
+#     },
+#     {
+#       name         = "informacoes-hospitalares-curated"
+#       description  = "Curated Data - SIH/SUS - Sistemas de Informações Hospitalares do SUS"
+#       type         = "CURATED"
+#       display_name = "Curated Data - SIH/SUS - Sistemas de Informações Hospitalares do SUS"
+#     },
+#     {
+#       name         = "sus-curated"
+#       description  = "Curated Data - Informações comuns entre os sistemas do SUS"
+#       type         = "CURATED"
+#       display_name = "Curated Data - Informações comuns entre os sistemas do SUS"
+#     }
+#   ]
+#   assets = {
+#     "informacoes-ambulatoriais-raw" = [{
+#       name          = "informacoes-ambulatoriais-raw"
+#       resource_name = "projects/${var.project}/buckets/${module.informacoes-ambulatoriais-raw.lake-bucket-id}"
+#       type          = "STORAGE_BUCKET"
+#     }]
 
-    "informacoes-hospitalares-raw" = [{
-      name          = "informacoes-hospitalares-raw"
-      resource_name = "projects/${var.project}/buckets/${module.informacoes-hospitalares-raw.lake-bucket-id}"
-      type          = "STORAGE_BUCKET"
-    }]
+#     "informacoes-hospitalares-raw" = [{
+#       name          = "informacoes-hospitalares-raw"
+#       resource_name = "projects/${var.project}/buckets/${module.informacoes-hospitalares-raw.lake-bucket-id}"
+#       type          = "STORAGE_BUCKET"
+#     }]
 
-    "sus-raw" = [{
-      name          = "sus-raw"
-      resource_name = "projects/${var.project}/buckets/${module.sus-raw.lake-bucket-id}"
-      type          = "STORAGE_BUCKET"
-    }]
+#     "sus-raw" = [{
+#       name          = "sus-raw"
+#       resource_name = "projects/${var.project}/buckets/${module.sus-raw.lake-bucket-id}"
+#       type          = "STORAGE_BUCKET"
+#     }]
 
-    "informacoes-ambulatoriais-curated" = [{
-      name          = "informacoes-ambulatoriais-curated"
-      resource_name = "projects/${var.project}/buckets/${module.informacoes-ambulatoriais-curated.lake-bucket-id}"
-      type          = "STORAGE_BUCKET"
-      },
-      {
-        name          = "informacoes-ambulatoriais-dataset"
-        resource_name = module.informacoes_ambulatoriais-dataset.lake-dataset-id
-        type          = "BIGQUERY_DATASET"
-    }]
+#     "informacoes-ambulatoriais-curated" = [{
+#       name          = "informacoes-ambulatoriais-curated"
+#       resource_name = "projects/${var.project}/buckets/${module.informacoes-ambulatoriais-curated.lake-bucket-id}"
+#       type          = "STORAGE_BUCKET"
+#       },
+#       {
+#         name          = "informacoes-ambulatoriais-dataset"
+#         resource_name = module.informacoes_ambulatoriais-dataset.lake-dataset-id
+#         type          = "BIGQUERY_DATASET"
+#     }]
 
-    "informacoes-hospitalares-curated" = [{
-      name          = "informacoes-hospitalares-curated"
-      resource_name = "projects/${var.project}/buckets/${module.informacoes-hospitalares-curated.lake-bucket-id}"
-      type          = "STORAGE_BUCKET"
-      },
-      {
-        name          = "informacoes-hospitalares-dataset"
-        resource_name = module.informacoes_hospitalares-dataset.lake-dataset-id
-        type          = "BIGQUERY_DATASET"
-    }]
+#     "informacoes-hospitalares-curated" = [{
+#       name          = "informacoes-hospitalares-curated"
+#       resource_name = "projects/${var.project}/buckets/${module.informacoes-hospitalares-curated.lake-bucket-id}"
+#       type          = "STORAGE_BUCKET"
+#       },
+#       {
+#         name          = "informacoes-hospitalares-dataset"
+#         resource_name = module.informacoes_hospitalares-dataset.lake-dataset-id
+#         type          = "BIGQUERY_DATASET"
+#     }]
 
-    "sus-curated" = [{
-      name          = "sus-curated"
-      resource_name = "projects/${var.project}/buckets/${module.sus-curated.lake-bucket-id}"
-      type          = "STORAGE_BUCKET"
-      },
-      {
-        name          = "sus-dataset"
-        resource_name = module.sus-dataset.lake-dataset-id
-        type          = "BIGQUERY_DATASET"
-    }]
-  }
-  depends_on = [
-    module.apis,
-    module.informacoes-ambulatoriais-raw,
-    module.informacoes-hospitalares-raw, module.sus-raw,
-    module.informacoes-ambulatoriais-curated,
-    module.informacoes-hospitalares-curated, module.sus-curated,
-    module.informacoes_ambulatoriais-dataset,
-    module.informacoes_hospitalares-dataset,
-    module.sus-dataset
-  ]
-}
+#     "sus-curated" = [{
+#       name          = "sus-curated"
+#       resource_name = "projects/${var.project}/buckets/${module.sus-curated.lake-bucket-id}"
+#       type          = "STORAGE_BUCKET"
+#       },
+#       {
+#         name          = "sus-dataset"
+#         resource_name = module.sus-dataset.lake-dataset-id
+#         type          = "BIGQUERY_DATASET"
+#     }]
+#   }
+#   depends_on = [
+#     module.apis,
+#     module.informacoes-ambulatoriais-raw,
+#     module.informacoes-hospitalares-raw, module.sus-raw,
+#     module.informacoes-ambulatoriais-curated,
+#     module.informacoes-hospitalares-curated, module.sus-curated,
+#     module.informacoes_ambulatoriais-dataset,
+#     module.informacoes_hospitalares-dataset,
+#     module.sus-dataset
+#   ]
+# }
 
 # Dataproc workflow templates
 module "dataproc-workflow-SIA" {
@@ -269,7 +314,7 @@ module "dataproc-workflow-SIA" {
   raw_bucket     = module.informacoes-ambulatoriais-raw.lake-bucket-url
   curated_bucket = module.informacoes-ambulatoriais-curated.lake-bucket-url
   source_system  = "SIA"
-  job_bucket = module.datasus-spark-jobs.lake-bucket-url
+  job_bucket     = module.datasus-spark-jobs.lake-bucket-url
   location       = var.region
   depends_on     = [module.informacoes-ambulatoriais-raw, module.datasus-spark-jobs]
 }
@@ -280,7 +325,7 @@ module "dataproc-workflow-SIH" {
   raw_bucket     = module.informacoes-hospitalares-raw.lake-bucket-url
   curated_bucket = module.informacoes-hospitalares-curated.lake-bucket-url
   source_system  = "SIH"
-  job_bucket = module.datasus-spark-jobs.lake-bucket-url
+  job_bucket     = module.datasus-spark-jobs.lake-bucket-url
   location       = var.region
   depends_on     = [module.informacoes-hospitalares-raw, module.datasus-spark-jobs]
 }
@@ -291,7 +336,7 @@ module "dataproc-workflow-SUS" {
   raw_bucket     = module.sus-raw.lake-bucket-url
   curated_bucket = module.sus-curated.lake-bucket-url
   source_system  = "SUS"
-  job_bucket = module.datasus-spark-jobs.lake-bucket-url
+  job_bucket     = module.datasus-spark-jobs.lake-bucket-url
   location       = var.region
   depends_on     = [module.sus-raw, module.datasus-spark-jobs]
 }
