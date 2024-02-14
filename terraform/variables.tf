@@ -19,6 +19,7 @@ variable "required_api_services" {
   default = [
     "dataplex.googleapis.com",
     "datacatalog.googleapis.com",
-    "dataproc.googleapis.com"
+    "dataproc.googleapis.com",
+    "dataform.googleapis.com"
   ]
 }
