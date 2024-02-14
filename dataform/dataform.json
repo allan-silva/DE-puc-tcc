@@ -1,8 +1,0 @@
-{
-  "defaultSchema": "dataform",
-  "assertionSchema": "dataform_assertions",
-  "warehouse": "bigquery",
-  "defaultDatabase": "puc-tcc-412315",
-  "defaultLocation": "US"
-}
-    
