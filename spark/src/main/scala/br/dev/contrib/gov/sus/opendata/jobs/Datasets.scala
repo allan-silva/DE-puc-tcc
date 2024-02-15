@@ -36,7 +36,12 @@ object Datasets {
     ("PA", ("informacoes_ambulatoriais", "producao_ambulatorial"))
   )
 
+  val SUS_TABLES = Map(
+    ("ST", ("sus", "estabelecimentos"))
+  )
+
   val SUS_SYSTEMS_TABLES = Map(
-    ("SIA", SIA_TABLES)
+    ("SIA", SIA_TABLES),
+    ("SUS", SUS_TABLES)
   )
 }

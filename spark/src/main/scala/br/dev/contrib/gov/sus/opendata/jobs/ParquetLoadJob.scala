@@ -94,8 +94,8 @@ object ParquetLoadJob {
     val tableInfo =
       SUS_SYSTEMS_TABLES(sourceSystem)
 
-    val targetTable: (String, String) = if (sourceSystem == "SIA") {
-      tableInfo(getSIAFileType(parquetFile))
+    val targetTable: (String, String) = if (sourceSystem == "SIA" || sourceSystem == "SUS") {
+      tableInfo(getFileType(parquetFile))
     } else
       throw new IllegalArgumentException(
         s"Source system $sourceSystem not implemented."
@@ -127,7 +127,7 @@ object ParquetLoadJob {
     )
   }
 
-  private def getSIAFileType(fileUri: String): String = {
+  private def getFileType(fileUri: String): String = {
     val lastPart = fileUri.lastIndexOf("/") + 1
     fileUri.substring(lastPart, lastPart + 2)
   }
