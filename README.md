@@ -12,3 +12,8 @@
 
 **datasets:** Datasets utilizados nesse trabalho: CNES(Cadastro Nacional dos estabelecimentos), SIA(Sistema de Informações Ambulatoriais), TabelaUnificada (Tabelas unificadas da complexidade e preço dos procedimentos ambulatoriais).
 
+## Libdatasus v1.0.7
+Biblioteca de código aberto criada para realizar a conversãode arquivos DBC/DBF para parquet.
+
+Repo: https://github.com/allan-silva/libdatasus
+
