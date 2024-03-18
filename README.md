@@ -9,3 +9,6 @@
 **spark:** Projeto Scala, responsável por fazer a descoberta, conversão e carregamentos dos dados dos arquivos DBC/DBF no Data warehouse.
 
 **terraform:** Arquivos de provisionamento da infraestrura na GCP utilizada nesse trabalho.
+
+**datasets:** Datasets utilizados nesse trabalho: CNES(Cadastro Nacional dos estabelecimentos), SIA(Sistema de Informações Ambulatoriais), TabelaUnificada (Tabelas unificadas da complexidade e preço dos procedimentos ambulatoriais).
+
